@@ -1,0 +1,10 @@
+# EasyOCR deployment (used by deploy/Dockerfile.easyocr). torch/torchvision are
+# installed separately from the PyTorch CPU index in the Dockerfile.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pillow==11.1.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+easyocr==1.7.2
+pyspellchecker==0.8.2

@@ -29,13 +29,14 @@ services:
   ocr:
     build:
       context: ..
-      dockerfile: Dockerfile
+      # ARM64 (Oracle Ampere): EasyOCR — PaddleOCR's runtime segfaults on aarch64.
+      # On an x86 host, switch this to `Dockerfile` (PaddleOCR, higher accuracy).
+      dockerfile: deploy/Dockerfile.easyocr
     image: manhwa-ocr:latest
     container_name: manhwa-ocr
     restart: unless-stopped
     environment:
-      # medium = accurate (default). Set to `mobile` for ~3x faster, lower accuracy.
-      PADDLE_MODELS: medium
+      OCR_BACKEND: easyocr
     # Cap resources so a burst of OCR can't starve the Go API / redis on a small
     # box. Tune to the instance: leave at least one core for the API. Example
     # below assumes a 2-OCPU instance (OCR gets 1.5, ~1.5 GB).

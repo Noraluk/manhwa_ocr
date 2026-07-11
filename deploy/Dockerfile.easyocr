@@ -1,0 +1,39 @@
+# EasyOCR image, primarily for ARM64 (Oracle Ampere) hosts.
+#
+# Why not PaddleOCR here: paddlepaddle's inference runtime segfaults on aarch64
+# (tested across versions 3.0/3.1/3.2 and both PP-OCRv5/v6 models). EasyOCR runs
+# on PyTorch, which has reliable aarch64 CPU wheels, so it works on the free
+# Oracle ARM VM. Trade-off: more character errors than Paddle (e.g. `I'M`→`TM`),
+# which a downstream LLM translator is expected to clean up in context.
+#
+# On x86 hosts prefer the root Dockerfile (PaddleOCR, higher accuracy).
+FROM python:3.10-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libglib2.0-0 libgl1 libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    OCR_BACKEND=easyocr
+WORKDIR /home/user/app
+
+# CPU-only torch/torchvision — the default index pulls a multi-GB CUDA build on
+# aarch64 that this GPU-less box can't use. Pin to the PyTorch CPU wheels.
+RUN pip install --no-cache-dir --user \
+        torch==2.13.0+cpu torchvision \
+        --index-url https://download.pytorch.org/whl/cpu
+
+COPY --chown=user deploy/requirements-easyocr.txt requirements.txt
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+COPY --chown=user . .
+
+# Bake the English EasyOCR models into the image so the first request is fast.
+RUN python -c "import easyocr; easyocr.Reader(['en'], gpu=False)"
+
+EXPOSE 7860
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
