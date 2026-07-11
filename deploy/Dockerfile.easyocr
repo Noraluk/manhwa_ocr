@@ -23,9 +23,11 @@ WORKDIR /home/user/app
 
 # CPU-only torch/torchvision — the default index pulls a multi-GB CUDA build on
 # aarch64 that this GPU-less box can't use. Pin to the PyTorch CPU wheels.
+# --extra-index-url (not --index-url): keep PyPI as the primary index for torch's
+# own deps (typing-extensions, sympy, …); the +cpu wheels live on the PyTorch index.
 RUN pip install --no-cache-dir --user \
         torch==2.13.0+cpu torchvision \
-        --index-url https://download.pytorch.org/whl/cpu
+        --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY --chown=user deploy/requirements-easyocr.txt requirements.txt
 RUN pip install --no-cache-dir --user -r requirements.txt
