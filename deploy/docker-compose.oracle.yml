@@ -1,0 +1,60 @@
+# Internal-only OCR service for the Oracle VM. It joins the existing Go API's
+# docker network so the API can call it at http://ocr:7860 — no public port,
+# nothing routed through Caddy.
+#
+# On the VM (after resizing the instance to >= 2 OCPU — OCR is CPU-bound):
+#
+#   # 1. free disk if tight (the box had ~10GB of reclaimable build cache):
+#   docker builder prune -f
+#
+#   # 2. get the code:
+#   git clone https://github.com/Noraluk/manhwa_ocr.git ~/manhwa-ocr
+#   cd ~/manhwa-ocr
+#
+#   # 3. confirm the external network name matches the running API stack:
+#   docker inspect novel-translator-api-staging-api-1 \
+#     --format '{{range $k,$_ := .NetworkSettings.Networks}}{{$k}}{{end}}'
+#   # (edit `name:` below if it differs)
+#
+#   # 4. build (native arm64 on the VM) and start:
+#   docker compose -f deploy/docker-compose.oracle.yml up -d --build
+#
+#   # 5. from the Go API container, verify internal reachability:
+#   docker exec novel-translator-api-staging-api-1 \
+#     wget -qO- http://ocr:7860/health
+#
+# Then point the Go API at OCR_URL=http://ocr:7860 (its own config/.env).
+
+services:
+  ocr:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: manhwa-ocr:latest
+    container_name: manhwa-ocr
+    restart: unless-stopped
+    environment:
+      # medium = accurate (default). Set to `mobile` for ~3x faster, lower accuracy.
+      PADDLE_MODELS: medium
+    # Cap resources so a burst of OCR can't starve the Go API / redis on a small
+    # box. Tune to the instance: leave at least one core for the API. Example
+    # below assumes a 2-OCPU instance (OCR gets 1.5, ~1.5 GB).
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2g
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:7860/health').getcode()==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s     # first start loads the model
+    networks:
+      - api
+
+networks:
+  api:
+    external: true
+    name: novel-translator-api-staging_default
