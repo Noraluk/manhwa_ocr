@@ -1,0 +1,16 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pillow==11.1.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+# Default backend (OCR_BACKEND=auto): best character accuracy on comic lettering.
+# CPU-only on Apple Silicon (no MPS), ~2.4x slower than easyocr with medium models.
+paddlepaddle==3.3.1
+paddleocr==3.7.0
+# Faster GPU/MPS backend (OCR_BACKEND=easyocr): more character errors.
+easyocr==1.7.2
+pyspellchecker==0.8.2
+# Highest quality (OCR_BACKEND=surya or hybrid): transformer OCR.
+# Needs a llama-server binary too:  brew install llama.cpp
+surya-ocr==0.21.1

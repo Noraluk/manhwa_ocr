@@ -1,0 +1,11 @@
+# Deploy image: default (paddleocr) backend only — no torch/easyocr/surya, so the
+# image stays small. OCR_BACKEND=easyocr/surya/hybrid won't work with this set.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pillow==11.1.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+paddlepaddle==3.2.2
+paddleocr==3.7.0
+pyspellchecker==0.8.2

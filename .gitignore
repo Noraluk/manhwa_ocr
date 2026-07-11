@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+overlay.png
+.pytest_cache/
+# local sample images / debug outputs — not needed on the Space
+*.webp
+image*.png
+overlay*.png
